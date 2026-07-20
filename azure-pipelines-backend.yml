@@ -1,0 +1,54 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+- group: WebDev
+
+steps:
+- checkout: self
+  clean: true
+
+- task: NodeTool@0
+  inputs:
+    versionSpec: '22.x'
+  displayName: Use Node.js 22
+
+- script: |
+    corepack enable
+    corepack prepare pnpm@10.34.5 --activate
+    pnpm install --frozen-lockfile
+  displayName: Install dependencies
+
+- script: |
+    pnpm --filter @workspace/api-server build
+  displayName: Build Backend
+
+# Remove files that never need to be deployed
+- script: |
+    rm -rf .git
+    rm -rf .github
+    rm -rf artifacts/cdsi-platform
+    find . -name ".DS_Store" -delete
+  displayName: Clean repository
+
+- task: ArchiveFiles@2
+  displayName: Create deployment package
+  inputs:
+    rootFolderOrFile: '$(Build.SourcesDirectory)'
+    includeRootFolder: false
+    archiveType: zip
+    archiveFile: '$(Build.ArtifactStagingDirectory)/backend.zip'
+    replaceExistingArchive: true
+
+- task: AzureWebApp@1
+  displayName: Deploy Backend
+  inputs:
+    azureSubscription: 'CDSI-Backend-Connection'
+    appType: webAppLinux
+    appName: cdsi-backend-final
+    package: '$(Build.ArtifactStagingDirectory)/backend.zip'
