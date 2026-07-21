@@ -1,6 +1,8 @@
 name: Deploy CDSI Backend
 
 on:
+  workflow_dispatch:
+
   push:
     branches:
       - main
@@ -27,8 +29,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: "pnpm"
+          node-version: 22
+          cache: pnpm
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -41,7 +43,7 @@ jobs:
       - name: Build Backend
         run: pnpm --filter @workspace/api-server build
 
-      - name: Azure Login
+      - name: Login to Azure
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
