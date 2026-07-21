@@ -32,17 +32,15 @@ jobs:
       - name: Build backend
         run: pnpm --filter @workspace/api-server build
 
-      - name: Create deployment package
+      - name: Create deploy package
         run: |
+          rm -rf deploy
           mkdir deploy
 
-          cp -R artifacts/api-server/dist deploy/dist
-          cp artifacts/api-server/package.json deploy/package.json
-          cp pnpm-lock.yaml deploy/
-
-          cd deploy
-
-          npm install --omit=dev
+          pnpm deploy \
+            --filter @workspace/api-server \
+            --prod \
+            deploy
 
       - uses: azure/login@v2
         with:
