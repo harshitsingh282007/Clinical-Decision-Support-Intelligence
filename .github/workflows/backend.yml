@@ -11,40 +11,46 @@ permissions:
   contents: read
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: 10.34.5
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
 
-      - name: Install dependencies
+      - name: Install workspace
         run: pnpm install --frozen-lockfile
 
       - name: Build backend
         run: pnpm --filter @workspace/api-server build
 
-      - name: Azure Login
-        uses: azure/login@v2
+      - name: Create deployment package
+        run: |
+          mkdir deploy
+
+          cp -R artifacts/api-server/dist deploy/dist
+          cp artifacts/api-server/package.json deploy/package.json
+          cp pnpm-lock.yaml deploy/
+
+          cd deploy
+
+          npm install --omit=dev
+
+      - uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          allow-no-subscriptions: true
 
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
+      - uses: azure/webapps-deploy@v3
         with:
           app-name: cdsi-backend-final
-          package: .
+          package: deploy
