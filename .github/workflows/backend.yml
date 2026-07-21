@@ -1,73 +1,30 @@
 name: Deploy CDSI Backend
 
 on:
-  workflow_dispatch:
-
   push:
     branches:
       - main
-    paths:
-      - "artifacts/api-server/**"
-      - "lib/**"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - ".github/workflows/backend.yml"
+  workflow_dispatch:
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.34.5
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build backend
-        run: pnpm --filter @workspace/api-server build
-
-      - name: Create deployment folder
-        run: |
-          mkdir deploy
-
-          cp -R artifacts/api-server/dist deploy/dist
-          cp artifacts/api-server/package.json deploy/package.json
-
-          # Azure/Oryx needs these
-          cp pnpm-lock.yaml deploy/
-          cp pnpm-workspace.yaml deploy/
-
-      - name: Archive deployment
-        run: |
-          cd deploy
-          zip -r ../backend.zip .
-
-      - name: Azure Login
-        uses: azure/login@v2
+      - uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Deploy to Azure
+      - name: Deploy
         uses: azure/webapps-deploy@v3
         with:
           app-name: cdsi-backend-final
-          package: backend.zip
+          package: .
