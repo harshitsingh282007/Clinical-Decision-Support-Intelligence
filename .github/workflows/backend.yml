@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -43,14 +43,21 @@ jobs:
       - name: Build backend
         run: pnpm --filter @workspace/api-server build
 
-      - name: Prepare deployment package
+      - name: Create deployment folder
         run: |
           mkdir deploy
 
           cp -R artifacts/api-server/dist deploy/dist
           cp artifacts/api-server/package.json deploy/package.json
 
-          pnpm deploy --filter @workspace/api-server --prod deploy
+          # Azure/Oryx needs these
+          cp pnpm-lock.yaml deploy/
+          cp pnpm-workspace.yaml deploy/
+
+      - name: Archive deployment
+        run: |
+          cd deploy
+          zip -r ../backend.zip .
 
       - name: Azure Login
         uses: azure/login@v2
@@ -59,8 +66,8 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Deploy
+      - name: Deploy to Azure
         uses: azure/webapps-deploy@v3
         with:
           app-name: cdsi-backend-final
-          package: deploy
+          package: backend.zip
