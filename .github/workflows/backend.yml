@@ -30,7 +30,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build backend
-        run: pnpm --filter @workspace/api-server build
+        run: |
+          pnpm --filter @workspace/api-zod build
+          pnpm --filter @workspace/api-server build
 
       - name: Create deploy package
         run: |

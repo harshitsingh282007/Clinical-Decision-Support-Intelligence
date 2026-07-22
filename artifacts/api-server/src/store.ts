@@ -1,8 +1,11 @@
 import fs from "fs";
+import path from "path";
 import { logger } from "./lib/logger.js";
 
-// In-memory job store for CDSI pipeline jobs
-// Keyed by jobId
+// Determine data directory (use shared /home/cdsi-data on Azure if available, otherwise local ./data)
+const BASE_DATA_DIR = fs.existsSync("/home") 
+  ? "/home/cdsi-data"
+  : path.resolve("./data");
 
 export type JobStage =
   | "uploading"
@@ -42,24 +45,149 @@ export interface JobState {
   updatedAt: Date;
 }
 
-// Report cache keyed by jobId
-export const jobStore = new Map<string, JobState>();
-
-// Chat history keyed by sessionId
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   timestamp: string;
 }
-export const chatStore = new Map<string, ChatMessage[]>();
 
-// Report context for chat (keyed by jobId → full context string)
-export const reportContextStore = new Map<string, string>();
+// ── Generic File-based Map implementation ────────────────────────────────────
+class FileMap<T> {
+  private dir: string;
+  private isJobStore: boolean;
 
-// A sessionId is independent of jobId (generated once per browser tab and can be reused
-// across multiple jobs), so we track which sessions chatted about which job. This lets us
-// actually find and delete the right chatStore entries when a job is deleted/cleaned up.
-const jobSessionsStore = new Map<string, Set<string>>();
+  constructor(dirName: string, isJobStore = false) {
+    this.dir = path.join(BASE_DATA_DIR, dirName);
+    this.isJobStore = isJobStore;
+    fs.mkdirSync(this.dir, { recursive: true });
+  }
+
+  private getPath(key: string): string {
+    const safeKey = key.replace(/[^a-zA-Z0-9-_]/g, "");
+    return path.join(this.dir, `${safeKey}.json`);
+  }
+
+  has(key: string): boolean {
+    return fs.existsSync(this.getPath(key));
+  }
+
+  get(key: string): T | undefined {
+    const p = this.getPath(key);
+    if (!fs.existsSync(p)) return undefined;
+    try {
+      const data = fs.readFileSync(p, "utf8");
+      const parsed = JSON.parse(data);
+      
+      // Date restoration for JobState objects
+      if (this.isJobStore && parsed) {
+        if (parsed.createdAt) parsed.createdAt = new Date(parsed.createdAt);
+        if (parsed.updatedAt) parsed.updatedAt = new Date(parsed.updatedAt);
+      }
+      
+      return parsed as T;
+    } catch {
+      return undefined;
+    }
+  }
+
+  set(key: string, value: T): this {
+    const p = this.getPath(key);
+    try {
+      fs.writeFileSync(p, JSON.stringify(value, null, 2), "utf8");
+    } catch (err) {
+      logger.error({ err, key }, `Failed to write file in FileMap: ${this.dir}`);
+    }
+    return this;
+  }
+
+  delete(key: string): boolean {
+    const p = this.getPath(key);
+    if (fs.existsSync(p)) {
+      try {
+        fs.unlinkSync(p);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  entries(): [string, T][] {
+    try {
+      const files = fs.readdirSync(this.dir);
+      const list: [string, T][] = [];
+      for (const file of files) {
+        if (file.endsWith(".json")) {
+          const key = path.basename(file, ".json");
+          const val = this.get(key);
+          if (val !== undefined) {
+            list.push([key, val]);
+          }
+        }
+      }
+      return list;
+    } catch {
+      return [];
+    }
+  }
+}
+
+// Custom store for Session Sets to handle serialization correctly
+class SessionSetStore {
+  private dir: string;
+
+  constructor() {
+    this.dir = path.join(BASE_DATA_DIR, "sessions");
+    fs.mkdirSync(this.dir, { recursive: true });
+  }
+
+  private getPath(key: string): string {
+    const safeKey = key.replace(/[^a-zA-Z0-9-_]/g, "");
+    return path.join(this.dir, `${safeKey}.json`);
+  }
+
+  get(jobId: string): Set<string> | undefined {
+    const p = this.getPath(jobId);
+    if (!fs.existsSync(p)) return undefined;
+    try {
+      const data = fs.readFileSync(p, "utf8");
+      const arr = JSON.parse(data) as string[];
+      return new Set(arr);
+    } catch {
+      return undefined;
+    }
+  }
+
+  set(jobId: string, value: Set<string>): this {
+    const p = this.getPath(jobId);
+    try {
+      fs.writeFileSync(p, JSON.stringify(Array.from(value), null, 2), "utf8");
+    } catch (err) {
+      logger.error({ err, jobId }, "Failed to write session set");
+    }
+    return this;
+  }
+
+  delete(jobId: string): boolean {
+    const p = this.getPath(jobId);
+    if (fs.existsSync(p)) {
+      try {
+        fs.unlinkSync(p);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }
+}
+
+// ── Persistent File-based Stores ─────────────────────────────────────────────
+export const jobStore = new FileMap<JobState>("jobs", true);
+export const chatStore = new FileMap<ChatMessage[]>("chats");
+export const reportContextStore = new FileMap<string>("contexts");
+const jobSessionsStore = new SessionSetStore();
 
 export function linkSessionToJob(jobId: string, sessionId: string): void {
   const sessions = jobSessionsStore.get(jobId) ?? new Set<string>();
