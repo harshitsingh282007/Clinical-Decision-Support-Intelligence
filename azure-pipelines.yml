@@ -30,7 +30,7 @@ steps:
 - task: AzureStaticWebApp@0
   displayName: 'Deploy to Azure Static Web App'
   inputs:
-    app_location: 'artifacts/cdsi-platform'
-    output_location: 'dist/public'
+    app_location: 'artifacts/cdsi-platform/dist/public'
+    output_location: ''
     skip_app_build: true
     azure_static_web_apps_api_token: '$(AZURE_STATIC_WEB_APPS_API_TOKEN)'
