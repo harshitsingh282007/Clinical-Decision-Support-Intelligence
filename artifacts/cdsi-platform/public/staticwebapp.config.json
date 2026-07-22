@@ -2,8 +2,19 @@
   "navigationFallback": {
     "rewrite": "/index.html",
     "exclude": [
-      "/assets/*",
-      "/*.{css,js,png,jpg,jpeg,gif,svg,ico,woff,woff2,ttf,eot}"
+      "/assets/**",
+      "/*.css",
+      "/*.js",
+      "/*.png",
+      "/*.jpg",
+      "/*.jpeg",
+      "/*.gif",
+      "/*.svg",
+      "/*.ico",
+      "/*.woff",
+      "/*.woff2",
+      "/*.ttf",
+      "/*.eot"
     ]
   }
 }
