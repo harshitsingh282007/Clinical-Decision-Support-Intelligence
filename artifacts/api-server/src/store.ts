@@ -2,10 +2,8 @@ import fs from "fs";
 import path from "path";
 import { logger } from "./lib/logger.js";
 
-// Determine data directory (use shared /home/cdsi-data on Azure if available, otherwise local ./data)
-const BASE_DATA_DIR = fs.existsSync("/home") 
-  ? "/home/cdsi-data"
-  : path.resolve("./data");
+// Persistent data directory inside the application root (shared & writeable on Azure App Service)
+const BASE_DATA_DIR = path.resolve("./data");
 
 export type JobStage =
   | "uploading"
