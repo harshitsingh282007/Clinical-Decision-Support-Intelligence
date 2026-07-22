@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
 import { CDSIProvider } from './context/CDSIContext';
 import { Sidebar } from './components/Sidebar';
+import { AuthGate } from './components/AuthGate';
 import Upload from './pages/Upload';
 import Intake from './pages/Intake';
 import Processing from './pages/Processing';
@@ -59,7 +60,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <CDSIProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <AppRouter />
+          <AuthGate>
+            <AppRouter />
+          </AuthGate>
         </WouterRouter>
       </CDSIProvider>
     </QueryClientProvider>
