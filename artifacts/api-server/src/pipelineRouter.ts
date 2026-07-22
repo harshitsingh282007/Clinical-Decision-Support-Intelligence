@@ -5,6 +5,13 @@
 import { logger } from "./lib/logger.js";
 import { errorMessage } from "./lib/errors.js";
 
+function getEnvSecure(key: string): string | undefined {
+  const val = process.env[key];
+  if (!val) return undefined;
+  // Trim spaces, newlines, and remove leading/trailing quotes or line separators
+  return val.trim().replace(/[\u200B-\u200D\uFEFF\u2028\u2029]/g, "").replace(/^["']|["']$/g, "");
+}
+
 const GROQ_STAGES = new Set([
   "ocr_cleanup",
   "entity_extract",
@@ -120,7 +127,7 @@ async function callGroqChat(
   language: string,
   jsonMode: boolean
 ): Promise<AIResponse> {
-  const apiKey = process.env["GROQ_API_KEY"];
+  const apiKey = getEnvSecure("GROQ_API_KEY");
   if (!apiKey) {
     return { content: "", error: "GROQ_API_KEY not configured", partial: true };
   }
@@ -157,8 +164,8 @@ async function callGroqChat(
 }
 
 async function callDxGPT(prompt: string, systemPrompt: string, language = "English"): Promise<AIResponse> {
-  const apiKey = process.env["DXGPT_API_KEY"];
-  const endpoint = process.env["DXGPT_ENDPOINT"];
+  const apiKey = getEnvSecure("DXGPT_API_KEY");
+  const endpoint = getEnvSecure("DXGPT_ENDPOINT");
 
   // Fall back to Groq if DxGPT not configured
   if (!apiKey || !endpoint) {
@@ -201,8 +208,8 @@ export async function* streamDxGPT(
   systemPrompt: string,
   language = "English"
 ): AsyncGenerator<string> {
-  const apiKey = process.env["DXGPT_API_KEY"];
-  const endpoint = process.env["DXGPT_ENDPOINT"];
+  const apiKey = getEnvSecure("DXGPT_API_KEY");
+  const endpoint = getEnvSecure("DXGPT_ENDPOINT");
 
   if (!apiKey || !endpoint) {
     // Fall back to Groq streaming
@@ -237,7 +244,7 @@ export async function* streamGroq(
   systemPrompt: string,
   language = "English"
 ): AsyncGenerator<string> {
-  const apiKey = process.env["GROQ_API_KEY"];
+  const apiKey = getEnvSecure("GROQ_API_KEY");
   if (!apiKey) {
     yield "Error: GROQ_API_KEY not configured. The server administrator needs to set this environment variable.";
     return;
