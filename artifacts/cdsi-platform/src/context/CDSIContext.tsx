@@ -26,8 +26,47 @@ interface CDSIContextType {
 const CDSIContext = createContext<CDSIContextType | null>(null);
 
 export function CDSIProvider({ children }: { children: ReactNode }) {
-  const [jobId, setJobId] = useState<string | null>(null);
-  const [report, setReport] = useState<ClinicalReport | null>(null);
+  const [jobId, setJobIdState] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('cdsi_job_id');
+    }
+    return null;
+  });
+
+  const [report, setReportState] = useState<ClinicalReport | null>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem('cdsi_report');
+      try {
+        return cached ? JSON.parse(cached) : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  const setJobId = (id: string | null) => {
+    setJobIdState(id);
+    if (typeof window !== 'undefined') {
+      if (id) {
+        sessionStorage.setItem('cdsi_job_id', id);
+      } else {
+        sessionStorage.removeItem('cdsi_job_id');
+      }
+    }
+  };
+
+  const setReport = (rep: ClinicalReport | null) => {
+    setReportState(rep);
+    if (typeof window !== 'undefined') {
+      if (rep) {
+        sessionStorage.setItem('cdsi_report', JSON.stringify(rep));
+      } else {
+        sessionStorage.removeItem('cdsi_report');
+      }
+    }
+  };
+
   const [language, setLanguage] = useState<string>('English');
   const [sessionId] = useState<string>(() => crypto.randomUUID());
   const [files, setFiles] = useState<UploadedFileInfo[]>([]);
