@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
-import { Stethoscope, Brain, HeartPulse, Check } from 'lucide-react';
+import { Stethoscope, Brain, HeartPulse, Check, AlertTriangle } from 'lucide-react';
 import { useCDSI } from '../context/CDSIContext';
 import { useStartAnalysis, type IntakeFormData, type IntakeFormDataAnalysisType } from '@workspace/api-client-react';
 import { PHQ9_QUESTIONS, GAD7_QUESTIONS } from '../translations';
@@ -9,6 +9,7 @@ export default function Intake() {
   const { jobId, language } = useCDSI();
   const [, setLocation] = useLocation();
   const startAnalysis = useStartAnalysis();
+  const [errorMsg, setErrorMsg] = useState('');
 
   const [analysisType, setAnalysisType] = useState<IntakeFormDataAnalysisType | null>(null);
   
@@ -104,9 +105,14 @@ export default function Intake() {
       mentalHealthDiagnosisDetails: previousMentalHealthDiagnosis ? mentalHealthDiagnosisDetails : null
     };
 
+    setErrorMsg('');
     startAnalysis.mutate({ data: { jobId, intakeData, language } }, {
       onSuccess: () => {
         setLocation('/processing');
+      },
+      onError: (err: any) => {
+        console.error('Analysis start failed:', err);
+        setErrorMsg(err.message || 'Failed to start clinical analysis. Please try again.');
       }
     });
   };
@@ -117,6 +123,13 @@ export default function Intake() {
         <h1 className="text-3xl font-semibold text-[#111827]">Patient Intake</h1>
         <p className="text-[#6B7280]">Select the analysis type and provide context to guide the AI decision support.</p>
       </div>
+
+      {errorMsg && (
+        <div className="p-4 bg-[#FEF2F2] border border-[#DC2626] rounded-md flex items-center gap-3 text-[#DC2626]">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+          <span className="text-sm font-medium">{errorMsg}</span>
+        </div>
+      )}
 
       {/* Analysis Type */}
       <div className="flex flex-col gap-4">
