@@ -6,7 +6,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const expectedToken = import.meta.env.VITE_ENTRY_TOKEN || "demo123";
+  const expectedToken = import.meta.env.VITE_ENTRY_TOKEN || "1234567812345678";
 
   useEffect(() => {
     const verified = sessionStorage.getItem("cdsi_access_token_verified");
