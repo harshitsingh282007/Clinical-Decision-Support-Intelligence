@@ -38,6 +38,7 @@ jobs:
       - name: Build frontend
         run: |
           export VITE_API_URL=https://cdsi-backend-final-ajhxc8ehgucvdndq.eastasia-01.azurewebsites.net
+          export VITE_ENTRY_TOKEN="demo123"
           pnpm --filter @workspace/cdsi-platform build
 
       - name: Deploy to Azure Static Web Apps
