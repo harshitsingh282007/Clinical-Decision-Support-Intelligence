@@ -398,7 +398,8 @@ export default function Report() {
 
   const downloadPdf = async () => {
     try {
-      const res = await fetch('/api/export-report', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const res = await fetch(`${apiUrl}/api/export-report`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jobId, report }),
       });
@@ -440,7 +441,8 @@ export default function Report() {
     setMessages(prev => [...prev, { role: 'user', content: msg }]);
     setIsStreaming(true);
     try {
-      const res = await fetch('/api/chat', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const res = await fetch(`${apiUrl}/api/chat`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId, jobId, message: msg, language }),
       });

@@ -33,7 +33,8 @@ export default function Upload() {
     fileList.forEach(f => formData.append('files', f.file));
 
     try {
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const res = await fetch(`${apiUrl}/api/upload`, { method: 'POST', body: formData });
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
 
