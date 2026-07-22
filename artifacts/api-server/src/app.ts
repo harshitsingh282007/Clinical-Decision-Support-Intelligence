@@ -81,6 +81,8 @@ app.use(
 
 // CORS configuration
 const allowedOrigins = [
+  "https://www.cdsi.in",
+  "https://cdsi.in",
   "https://victorious-rock-052758600.7.azurestaticapps.net",
   "http://localhost:5173",
 ];
