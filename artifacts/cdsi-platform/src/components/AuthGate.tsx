@@ -1,3 +1,4 @@
+// Refined minimalist authentication gate
 import { useState, useEffect } from "react";
 import { Lock, ArrowRight, Linkedin } from "lucide-react";
 
