@@ -1,24 +1,26 @@
 {
   "routes": [
-    {
-      "route": "/intake",
-      "serve": "/index.html",
-      "statusCode": 200
-    },
-    {
-      "route": "/processing",
-      "serve": "/index.html",
-      "statusCode": 200
-    },
-    {
-      "route": "/report",
-      "serve": "/index.html",
-      "statusCode": 200
-    },
-    {
-      "route": "/settings",
-      "serve": "/index.html",
-      "statusCode": 200
-    }
-  ]
+    {"route": "/intake", "serve": "/index.html", "statusCode": 200},
+    {"route": "/processing", "serve": "/index.html", "statusCode": 200},
+    {"route": "/report", "serve": "/index.html", "statusCode": 200},
+    {"route": "/settings", "serve": "/index.html", "statusCode": 200}
+  ],
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "/assets/*",
+      "/*.css",
+      "/*.js",
+      "/*.png",
+      "/*.jpg",
+      "/*.jpeg",
+      "/*.gif",
+      "/*.svg",
+      "/*.ico",
+      "/*.woff",
+      "/*.woff2",
+      "/*.ttf",
+      "/*.eot"
+    ]
+  }
 }
