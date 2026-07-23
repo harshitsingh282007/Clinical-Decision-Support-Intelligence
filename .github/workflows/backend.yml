@@ -51,7 +51,14 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Stop Azure Web App
+        run: az webapp stop --name cdsi-backend-final --resource-group CDSI
+
       - uses: azure/webapps-deploy@v3
         with:
           app-name: cdsi-backend-final
           package: deploy
+
+      - name: Start Azure Web App
+        if: always()
+        run: az webapp start --name cdsi-backend-final --resource-group CDSI
