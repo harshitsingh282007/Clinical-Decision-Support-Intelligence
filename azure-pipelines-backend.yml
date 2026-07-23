@@ -25,21 +25,19 @@ steps:
   displayName: Install dependencies
 
 - script: |
+    pnpm run typecheck:libs
     pnpm --filter @workspace/api-server build
   displayName: Build Backend
 
-# Remove files that never need to be deployed
+# Create isolated production deployment folder using pnpm deploy (symlink-free)
 - script: |
-    rm -rf .git
-    rm -rf .github
-    rm -rf artifacts/cdsi-platform
-    find . -name ".DS_Store" -delete
-  displayName: Clean repository
+    pnpm deploy --filter @workspace/api-server --prod --legacy $(Agent.TempDirectory)/deploy
+  displayName: Prepare production package
 
 - task: ArchiveFiles@2
   displayName: Create deployment package
   inputs:
-    rootFolderOrFile: '$(Build.SourcesDirectory)'
+    rootFolderOrFile: '$(Agent.TempDirectory)/deploy'
     includeRootFolder: false
     archiveType: zip
     archiveFile: '$(Build.ArtifactStagingDirectory)/backend.zip'
