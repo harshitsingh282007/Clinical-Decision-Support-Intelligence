@@ -183,13 +183,14 @@ async function callGroqChat(
   return { content: "", error: finalErr, partial: true };
 }
 
-async function callDxGPT(prompt: string, systemPrompt: string, language = "English"): Promise<AIResponse> {
+async function callDxGPT(prompt: string, systemPrompt: string, language = "English", isFallback = false): Promise<AIResponse> {
   const apiKey = getEnvSecure("DXGPT_API_KEY");
   const endpoint = getEnvSecure("DXGPT_ENDPOINT");
 
   // Fall back to Groq if DxGPT not configured
   if (!apiKey || !endpoint) {
-    logger.warn("DxGPT not configured, falling back to Groq");
+    logger.warn("DxGPT not configured (missing key or endpoint)");
+    if (isFallback) return { content: "", error: "DxGPT fallback failed: DXGPT_ENDPOINT or DXGPT_API_KEY missing", partial: true };
     return callGroqChat(prompt, systemPrompt, language, false);
   }
 
@@ -210,12 +211,14 @@ async function callDxGPT(prompt: string, systemPrompt: string, language = "Engli
     );
     if (!res.ok) {
       const err = await res.text();
-      logger.warn({ err }, "DxGPT API error, falling back to Groq");
+      logger.warn({ err }, "DxGPT API error");
+      if (isFallback) return { content: "", error: `DxGPT fallback failed: ${res.status} ${err}`, partial: true };
       return callGroqChat(prompt, systemPrompt, language, false);
     }
     return { content: extractChatContent(await res.json()) };
   } catch (e: unknown) {
-    logger.warn({ msg: errorMessage(e) }, "DxGPT call failed, falling back to Groq");
+    logger.warn({ msg: errorMessage(e) }, "DxGPT call failed");
+    if (isFallback) return { content: "", error: `DxGPT fallback failed: ${errorMessage(e)}`, partial: true };
     return callGroqChat(prompt, systemPrompt, language, false);
   }
 }
@@ -308,12 +311,12 @@ export async function callAI(
     if (groqRes.error && groqRes.error.includes("403")) {
       logger.warn({ stage, error: groqRes.error }, "Groq blocked (likely Cloudflare WAF on Azure). Falling back to DxGPT.");
       // Fallback to DxGPT for Groq stages if Groq fails
-      return callDxGPT(prompt, systemPrompt, language);
+      return callDxGPT(prompt, systemPrompt, language, true);
     }
     return groqRes;
   }
   if (DXGPT_STAGES.has(stage)) {
-    return callDxGPT(prompt, systemPrompt, language);
+    return callDxGPT(prompt, systemPrompt, language, false);
   }
   return { content: "", error: `Unknown stage: ${stage}`, partial: true };
 }
