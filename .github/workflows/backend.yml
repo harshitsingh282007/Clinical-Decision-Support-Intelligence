@@ -45,21 +45,17 @@ jobs:
             --legacy \
             deploy
 
-      - name: Verify dist exists in deploy
+      - name: Verify dist exists
         run: |
-          echo "=== Deploy folder contents ==="
-          ls -la deploy/
-          echo "=== Dist folder contents ==="
-          ls -la deploy/dist/
-          echo "=== Checking index.mjs exists ==="
           test -f deploy/dist/index.mjs && echo "✅ index.mjs found" || (echo "❌ index.mjs MISSING" && exit 1)
+          echo "Deploy size: $(du -sh deploy | cut -f1)"
 
-      - name: Create ZIP for deployment
+      - name: Create ZIP
         run: |
           cd deploy
-          zip -r ../backend-deploy.zip . -x "node_modules/.cache/*"
+          zip -r ../backend.zip . -x "node_modules/.cache/*" "node_modules/.package-lock.json"
           cd ..
-          echo "ZIP size: $(du -h backend-deploy.zip | cut -f1)"
+          echo "ZIP size: $(du -h backend.zip | cut -f1)"
 
       - uses: azure/login@v2
         with:
@@ -67,24 +63,23 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Stop App Service
-        run: az webapp stop --name cdsi-backend-final --resource-group CDSI
-
-      - name: Deploy via Azure CLI
+      - name: Configure App Settings
         run: |
           az webapp config appsettings set \
             --name cdsi-backend-final \
             --resource-group CDSI \
             --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false WEBSITE_RUN_FROM_PACKAGE=0
 
+      - name: Deploy to Azure
+        run: |
           az webapp deploy \
             --name cdsi-backend-final \
             --resource-group CDSI \
-            --src-path backend-deploy.zip \
+            --src-path backend.zip \
             --type zip \
-            --clean true \
-            --restart false
+            --async true
 
-      - name: Start App Service
-        if: always()
-        run: az webapp start --name cdsi-backend-final --resource-group CDSI
+      - name: Restart App Service
+        run: |
+          sleep 30
+          az webapp restart --name cdsi-backend-final --resource-group CDSI
