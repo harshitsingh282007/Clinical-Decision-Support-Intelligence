@@ -34,28 +34,15 @@ jobs:
           pnpm run typecheck:libs
           pnpm --filter @workspace/api-server build
 
-      - name: Create deploy package
+      - name: Prepare production package
         run: |
-          rm -rf deploy
-          mkdir deploy
-
-          pnpm deploy \
-            --filter @workspace/api-server \
-            --prod \
-            --legacy \
-            deploy
-
-      - name: Verify dist exists
-        run: |
-          test -f deploy/dist/index.mjs && echo "✅ index.mjs found" || (echo "❌ index.mjs MISSING" && exit 1)
-          echo "Deploy size: $(du -sh deploy | cut -f1)"
+          pnpm deploy --filter @workspace/api-server --prod --legacy deploy
 
       - name: Create ZIP
         run: |
           cd deploy
-          zip -r ../backend.zip . -x "node_modules/.cache/*" "node_modules/.package-lock.json"
+          zip -r ../backend.zip .
           cd ..
-          echo "ZIP size: $(du -h backend.zip | cut -f1)"
 
       - uses: azure/login@v2
         with:
@@ -68,18 +55,10 @@ jobs:
           az webapp config appsettings set \
             --name cdsi-backend-final \
             --resource-group CDSI \
-            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false WEBSITE_RUN_FROM_PACKAGE=0
+            --settings WEBSITE_RUN_FROM_PACKAGE=1
 
-      - name: Deploy to Azure
-        run: |
-          az webapp deploy \
-            --name cdsi-backend-final \
-            --resource-group CDSI \
-            --src-path backend.zip \
-            --type zip \
-            --async true
-
-      - name: Restart App Service
-        run: |
-          sleep 30
-          az webapp restart --name cdsi-backend-final --resource-group CDSI
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: cdsi-backend-final
+          package: backend.zip
