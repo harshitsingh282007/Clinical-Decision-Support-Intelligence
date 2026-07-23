@@ -82,4 +82,41 @@ router.get("/debug-env", (req: Request, res: Response) => {
   });
 });
 
+router.get("/test-groq", async (req: Request, res: Response) => {
+  try {
+    let key = process.env.GROQ_API_KEY;
+    if (key) {
+      key = key.trim().replace(/[\u200B-\u200D\uFEFF\u2028\u2029]/g, "").replace(/^["']|["']$/g, "");
+    }
+    
+    if (!key) {
+      return res.status(400).json({ error: "No GROQ_API_KEY" });
+    }
+
+    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${key}`,
+        "Content-Type": "application/json",
+        "User-Agent": "CDSI-App/1.0"
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-8b-instant",
+        messages: [{ role: "user", content: "test" }]
+      })
+    });
+
+    const status = groqRes.status;
+    const text = await groqRes.text();
+
+    res.json({
+      status,
+      headers: Object.fromEntries(groqRes.headers.entries()),
+      body: text
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
