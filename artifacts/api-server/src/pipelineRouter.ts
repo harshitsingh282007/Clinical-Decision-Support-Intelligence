@@ -119,7 +119,7 @@ async function* parseSSETokens(body: ReadableStream<Uint8Array>): AsyncGenerator
   }
 }
 
-// ── Non-streaming calls ──────────────────────────────────────────────────────
+const GROQ_FALLBACK_MODELS = ["llama-3.1-8b-instant", "llama3-8b-8192"];
 
 async function callGroqChat(
   prompt: string,
@@ -131,36 +131,56 @@ async function callGroqChat(
   if (!apiKey) {
     return { content: "", error: "GROQ_API_KEY not configured", partial: true };
   }
-  try {
-    const res = await withTimeout(
-      fetch(GROQ_URL, {
-        method: "POST",
-        headers: groqHeaders(apiKey),
-        body: JSON.stringify({
-          model: GROQ_MODEL,
-          messages: withSystemPrompt(systemPrompt, languageInstruction(language), [
-            { role: "user", content: prompt },
-          ]),
-          temperature: jsonMode ? 0.1 : 0.3,
-          max_tokens: 4096,
-          ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
+
+  const modelsToTry = [GROQ_MODEL, ...GROQ_FALLBACK_MODELS];
+  let lastError = "";
+  let lastStatus = 500;
+
+  for (const model of modelsToTry) {
+    try {
+      const res = await withTimeout(
+        fetch(GROQ_URL, {
+          method: "POST",
+          headers: groqHeaders(apiKey),
+          body: JSON.stringify({
+            model: model,
+            messages: withSystemPrompt(systemPrompt, languageInstruction(language), [
+              { role: "user", content: prompt },
+            ]),
+            temperature: jsonMode ? 0.1 : 0.3,
+            max_tokens: 4096,
+            ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
+          }),
         }),
-      }),
-      TIMEOUT_MS
-    );
-    if (!res.ok) {
-      const err = await res.text();
-      if (jsonMode) {
-        logger.error({ err }, "Groq API error");
-        return { content: "", error: `Groq API error: ${res.status}`, partial: true };
+        TIMEOUT_MS
+      );
+      
+      if (res.ok) {
+        return { content: extractChatContent(await res.json()) };
       }
-      return { content: "", error: `Groq API error: ${res.status} ${err}`, partial: true };
+      
+      const err = await res.text();
+      lastError = err;
+      lastStatus = res.status;
+      logger.warn({ model, status: res.status, err }, "Groq model failed, trying next");
+      
+      // If unauthorized (401), no point in trying other models
+      if (res.status === 401) {
+        break;
+      }
+    } catch (e: unknown) {
+      const msg = errorMessage(e);
+      logger.warn({ model, msg }, "Groq model threw exception, trying next");
+      lastError = msg;
     }
-    return { content: extractChatContent(await res.json()) };
-  } catch (e: unknown) {
-    const msg = errorMessage(e);
-    return { content: "", error: msg, timedOut: msg.includes("timed out"), partial: true };
   }
+
+  const finalErr = `Groq API error: ${lastStatus} ${lastError}`;
+  if (jsonMode) {
+    logger.error({ finalErr }, "All Groq models failed");
+    return { content: "", error: finalErr, partial: true };
+  }
+  return { content: "", error: finalErr, partial: true };
 }
 
 async function callDxGPT(prompt: string, systemPrompt: string, language = "English"): Promise<AIResponse> {
