@@ -45,20 +45,46 @@ jobs:
             --legacy \
             deploy
 
+      - name: Verify dist exists in deploy
+        run: |
+          echo "=== Deploy folder contents ==="
+          ls -la deploy/
+          echo "=== Dist folder contents ==="
+          ls -la deploy/dist/
+          echo "=== Checking index.mjs exists ==="
+          test -f deploy/dist/index.mjs && echo "✅ index.mjs found" || (echo "❌ index.mjs MISSING" && exit 1)
+
+      - name: Create ZIP for deployment
+        run: |
+          cd deploy
+          zip -r ../backend-deploy.zip . -x "node_modules/.cache/*"
+          cd ..
+          echo "ZIP size: $(du -h backend-deploy.zip | cut -f1)"
+
       - uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Stop Azure Web App
+      - name: Stop App Service
         run: az webapp stop --name cdsi-backend-final --resource-group CDSI
 
-      - uses: azure/webapps-deploy@v3
-        with:
-          app-name: cdsi-backend-final
-          package: deploy
+      - name: Deploy via Azure CLI
+        run: |
+          az webapp config appsettings set \
+            --name cdsi-backend-final \
+            --resource-group CDSI \
+            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false WEBSITE_RUN_FROM_PACKAGE=0
 
-      - name: Start Azure Web App
+          az webapp deploy \
+            --name cdsi-backend-final \
+            --resource-group CDSI \
+            --src-path backend-deploy.zip \
+            --type zip \
+            --clean true \
+            --restart false
+
+      - name: Start App Service
         if: always()
         run: az webapp start --name cdsi-backend-final --resource-group CDSI
