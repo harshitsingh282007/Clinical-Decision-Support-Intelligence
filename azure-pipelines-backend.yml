@@ -43,6 +43,15 @@ steps:
     archiveFile: '$(Build.ArtifactStagingDirectory)/backend.zip'
     replaceExistingArchive: true
 
+- task: AzureCLI@2
+  displayName: Configure App Settings
+  inputs:
+    azureSubscription: 'CDSI-Backend-Connection'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az webapp config appsettings set --name cdsi-backend-final --resource-group CDSI --settings WEBSITE_RUN_FROM_PACKAGE=1
+
 - task: AzureWebApp@1
   displayName: Deploy Backend
   inputs:
