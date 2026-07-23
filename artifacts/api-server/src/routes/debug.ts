@@ -6,43 +6,49 @@ import type { Request, Response } from "express";
 const router = Router();
 
 router.get("/debug-logs", (req: Request, res: Response) => {
-  // Try to find logs under Azure's default LogFiles directory, or look for local logs
   const pathsToTry = [
     "/home/LogFiles/Application",
     "/home/LogFiles",
     "./logs"
   ];
 
-  let logDir = "";
-  for (const p of pathsToTry) {
-    if (fs.existsSync(p)) {
-      logDir = p;
-      break;
-    }
-  }
-
-  if (!logDir) {
-    res.status(404).json({ error: "No log directories found", triedPaths: pathsToTry });
-    return;
-  }
+  const targetFile = req.query["file"] as string | undefined;
 
   try {
-    const files = fs.readdirSync(logDir);
-    const logFiles = files.filter(f => f.endsWith(".log") || f.endsWith(".txt") || f.includes("stdout"));
-    if (logFiles.length === 0) {
-      res.json({ message: "No log files found in directory", dir: logDir, files });
+    const allFiles: any[] = [];
+    for (const p of pathsToTry) {
+      if (fs.existsSync(p)) {
+        const files = fs.readdirSync(p);
+        for (const file of files) {
+          const fullPath = path.join(p, file);
+          if (fs.statSync(fullPath).isFile()) {
+            const stats = fs.statSync(fullPath);
+            allFiles.push({
+              dir: p,
+              file,
+              fullPath,
+              size: stats.size,
+              mtime: stats.mtimeMs
+            });
+          }
+        }
+      }
+    }
+
+    if (targetFile) {
+      const match = allFiles.find(f => f.file === targetFile || f.fullPath === targetFile);
+      if (!match) {
+        res.status(404).json({ error: "File not found", targetFile });
+        return;
+      }
+      const content = fs.readFileSync(match.fullPath, "utf8");
+      res.type("text/plain").send(content.slice(-50000));
       return;
     }
 
-    // Sort files by modification time
-    const sorted = logFiles.map(file => {
-      const stats = fs.statSync(path.join(logDir, file));
-      return { file, mtime: stats.mtimeMs };
-    }).sort((a, b) => b.mtime - a.mtime);
-
-    const latestFile = sorted[0].file;
-    const content = fs.readFileSync(path.join(logDir, latestFile), "utf8");
-    res.type("text/plain").send(content.slice(-30000)); // Send last 30,000 characters of logs
+    // Sort files by modification time descending
+    allFiles.sort((a, b) => b.mtime - a.mtime);
+    res.json({ availableFiles: allFiles });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

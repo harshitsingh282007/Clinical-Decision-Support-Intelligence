@@ -493,6 +493,17 @@ export default function Report() {
         </div>
       )}
 
+      {/* ── Error Banner ── */}
+      {report.hasError && (
+        <div className="bg-red-50 text-red-700 px-5 py-4 rounded-xl flex items-start gap-3 shadow border border-red-200">
+          <ShieldAlert className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold">Pipeline Error</p>
+            <p className="text-sm mt-1 text-red-600 font-mono break-all">{report.errorMessage || 'An unknown error occurred during AI processing.'}</p>
+          </div>
+        </div>
+      )}
+
       {/* ── Psychiatric Banner ── */}
       {report.psychiatricSummary?.showMentalHealthBanner && (
         <div className="bg-violet-600 text-white px-5 py-4 rounded-xl flex items-center gap-3 shadow">
