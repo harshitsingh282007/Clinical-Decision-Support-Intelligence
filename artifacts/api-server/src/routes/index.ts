@@ -7,6 +7,7 @@ import chatRouter from "./chat.js";
 import exportRouter from "./export.js";
 import deleteRouter from "./delete.js";
 import authRouter from "./auth.js";
+import debugRouter from "./debug.js";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(chatRouter);
 router.use(exportRouter);
 router.use(deleteRouter);
 router.use(authRouter);
+router.use(debugRouter);
 
 export default router;
