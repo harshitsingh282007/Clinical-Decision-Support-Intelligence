@@ -304,7 +304,13 @@ export async function callAI(
   const jsonMode = options?.jsonMode ?? false;
 
   if (GROQ_STAGES.has(stage)) {
-    return callGroqChat(prompt, systemPrompt, language, jsonMode);
+    const groqRes = await callGroqChat(prompt, systemPrompt, language, jsonMode);
+    if (groqRes.error && groqRes.error.includes("403")) {
+      logger.warn({ stage, error: groqRes.error }, "Groq blocked (likely Cloudflare WAF on Azure). Falling back to DxGPT.");
+      // Fallback to DxGPT for Groq stages if Groq fails
+      return callDxGPT(prompt, systemPrompt, language);
+    }
+    return groqRes;
   }
   if (DXGPT_STAGES.has(stage)) {
     return callDxGPT(prompt, systemPrompt, language);
