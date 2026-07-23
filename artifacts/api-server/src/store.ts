@@ -2,8 +2,11 @@ import fs from "fs";
 import path from "path";
 import { logger } from "./lib/logger.js";
 
-// Persistent data directory inside the application root (shared & writeable on Azure App Service)
-const BASE_DATA_DIR = path.resolve("./data");
+// Persistent data directory
+// On Azure App Service, /home/site/wwwroot is read-only when using WEBSITE_RUN_FROM_PACKAGE=1
+// We must use a writable path under /home.
+const isAzure = process.env.WEBSITE_SITE_NAME !== undefined;
+const BASE_DATA_DIR = isAzure ? "/home/data/cdsi-store" : path.resolve("./data");
 
 export type JobStage =
   | "uploading"
