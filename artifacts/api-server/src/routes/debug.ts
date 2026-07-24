@@ -111,4 +111,11 @@ router.get("/test-gemini", async (req: Request, res: Response) => {
 
     return res.json({
       status,
+      text
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
