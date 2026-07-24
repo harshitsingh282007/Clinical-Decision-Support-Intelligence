@@ -15,18 +15,21 @@ export default function Settings() {
   return (
     <div className="w-full max-w-3xl flex flex-col gap-10 pt-6 pb-20">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold text-[#111827]">{t('settingsTitle', language)}</h1>
-        <p className="text-[#6B7280]">{t('settingsSubtitle', language)}</p>
+        <div className="flex items-center gap-3">
+          <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-lg shadow-sm" />
+          <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">{t('settingsTitle', language)}</h1>
+        </div>
+        <p className="text-slate-500 dark:text-slate-400">{t('settingsSubtitle', language)}</p>
       </div>
 
       {/* Language Section */}
       <section className="flex flex-col gap-4">
-        <div className="flex items-center gap-2 border-b border-[#E5E7EB] pb-3">
-          <Globe className="w-5 h-5 text-[#6B7280]" />
-          <h2 className="text-lg font-semibold text-[#111827]">{t('languageSection', language)}</h2>
+        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+          <Globe className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('languageSection', language)}</h2>
         </div>
-        <div className="bg-white border border-[#E5E7EB] rounded-xl p-6 shadow-sm">
-          <label className="block text-sm font-medium text-[#111827] mb-4">{t('appLanguage', language)}</label>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
+          <label className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-4">{t('appLanguage', language)}</label>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {LANGUAGES.map(lang => (
               <button
@@ -34,8 +37,8 @@ export default function Settings() {
                 onClick={() => setLanguage(lang.code)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
                   language === lang.code
-                    ? 'border-[#16A34A] bg-[#F0FDF4] text-[#16A34A] shadow-sm'
-                    : 'border-[#E5E7EB] bg-white text-[#6B7280] hover:bg-[#FAFAFA] hover:border-[#D1D5DB]'
+                    ? 'border-primary bg-primary/10 text-primary shadow-sm dark:bg-primary/20'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600'
                 }`}
               >
                 <span className="text-base">{lang.flag}</span>
@@ -44,7 +47,7 @@ export default function Settings() {
             ))}
           </div>
           {language !== 'English' && (
-            <div className="mt-4 flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">
+            <div className="mt-4 flex items-center gap-2 text-xs text-primary bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-lg px-4 py-2.5">
               <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
               <span>Active: <strong>{language}</strong> - {t('appLanguage', language)}</span>
             </div>
@@ -54,47 +57,47 @@ export default function Settings() {
 
       {/* System Status Section */}
       <section className="flex flex-col gap-4">
-        <div className="flex items-center gap-2 border-b border-[#E5E7EB] pb-3">
-          <Database className="w-5 h-5 text-[#6B7280]" />
-          <h2 className="text-lg font-semibold text-[#111827]">{t('systemStatus', language)}</h2>
+        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+          <Database className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('systemStatus', language)}</h2>
         </div>
-        <div className="bg-white border border-[#E5E7EB] rounded-xl p-6 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
-              <span className="font-medium text-[#111827]">{t('apiConnection', language)}</span>
-              <span className="text-sm text-[#6B7280]">{t('apiBackend', language)}</span>
+              <span className="font-medium text-slate-900 dark:text-slate-100">{t('apiConnection', language)}</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400">{t('apiBackend', language)}</span>
             </div>
             <div className="flex items-center gap-2">
               {apiStatus === 'checking' && (
-                <span className="px-3 py-1 rounded-full bg-[#FAFAFA] border border-[#E5E7EB] text-[#6B7280] text-sm font-medium flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#D1D5DB] animate-pulse" />
+                <span className="px-3 py-1 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-sm font-medium flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600 animate-pulse" />
                   {t('checking', language)}
                 </span>
               )}
               {apiStatus === 'up' && (
-                <span className="px-3 py-1 rounded-full bg-[#F0FDF4] border border-[#16A34A] text-[#16A34A] text-sm font-medium flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full bg-primary/10 dark:bg-primary/20 border border-primary text-primary text-sm font-medium flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4" />{t('online', language)}
                 </span>
               )}
               {apiStatus === 'down' && (
-                <span className="px-3 py-1 rounded-full bg-[#FEF2F2] border border-[#DC2626] text-[#DC2626] text-sm font-medium flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 text-sm font-medium flex items-center gap-2">
                   <XCircle className="w-4 h-4" />{t('offline', language)}
                 </span>
               )}
             </div>
           </div>
-          <div className="mt-4 pt-4 border-t border-[#E5E7EB] flex items-center justify-between">
+          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
             <div className="flex flex-col">
-              <span className="font-medium text-[#111827]">{t('jobProcessor', language)}</span>
-              <span className="text-sm text-[#6B7280]">{t('jobProcessorDesc', language)}</span>
+              <span className="font-medium text-slate-900 dark:text-slate-100">{t('jobProcessor', language)}</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400">{t('jobProcessorDesc', language)}</span>
             </div>
             <div className="flex items-center gap-2">
               {apiStatus === 'up' ? (
-                <span className="px-3 py-1 rounded-full bg-[#F0FDF4] border border-[#16A34A] text-[#16A34A] text-sm font-medium flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full bg-primary/10 dark:bg-primary/20 border border-primary text-primary text-sm font-medium flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4" />{t('active', language)}
                 </span>
               ) : (
-                <span className="px-3 py-1 rounded-full bg-[#FEF2F2] border border-[#DC2626] text-[#DC2626] text-sm font-medium flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 text-sm font-medium flex items-center gap-2">
                   <XCircle className="w-4 h-4" />{t('unreachable', language)}
                 </span>
               )}
@@ -105,13 +108,13 @@ export default function Settings() {
 
       {/* Compliance Section */}
       <section className="flex flex-col gap-4">
-        <div className="flex items-center gap-2 border-b border-[#E5E7EB] pb-3">
-          <ShieldAlert className="w-5 h-5 text-[#6B7280]" />
-          <h2 className="text-lg font-semibold text-[#111827]">{t('compliance', language)}</h2>
+        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+          <ShieldAlert className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('compliance', language)}</h2>
         </div>
-        <div className="bg-[#FAFAFA] border border-[#E5E7EB] rounded-xl p-6 text-sm text-[#6B7280] flex flex-col gap-4 leading-relaxed">
+        <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-6 text-sm text-slate-500 dark:text-slate-400 flex flex-col gap-4 leading-relaxed">
           <p>
-            <strong className="text-[#111827]">Clinical Decision Support Intelligence (CDSI)</strong> is an AI-powered analytical tool designed to assist healthcare professionals.
+            <strong className="text-slate-900 dark:text-slate-100">Clinical Decision Support Intelligence (CDSI)</strong> is an AI-powered analytical tool designed to assist healthcare professionals.
           </p>
           <p>
             <strong>Disclaimer:</strong> {t('disclaimer', language)}

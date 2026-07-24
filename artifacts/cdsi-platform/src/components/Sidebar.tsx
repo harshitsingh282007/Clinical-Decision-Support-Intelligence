@@ -3,6 +3,7 @@ import { UploadCloud, Activity, FileText, MessageSquare, Settings, Menu, X } fro
 import { useState } from 'react';
 import { t } from '../translations';
 import { useCDSI } from '../context/CDSIContext';
+import { ThemeToggle } from './ThemeToggle';
 
 export function Sidebar() {
   const [location] = useLocation();
@@ -32,8 +33,8 @@ export function Sidebar() {
             onClick={() => setIsOpen(false)}
             className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
               active 
-                ? 'bg-[#F0FDF4] text-[#16A34A] font-medium relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-[#16A34A] before:rounded-r-md' 
-                : 'text-[#6B7280] hover:text-[#111827] hover:bg-[#FAFAFA]'
+                ? 'bg-primary/10 text-primary font-medium relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-primary before:rounded-r-md dark:bg-primary/20' 
+                : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800/50'
             }`}
           >
             <item.icon className="w-5 h-5" />
@@ -48,7 +49,7 @@ export function Sidebar() {
     <>
       {/* Mobile Toggle */}
       <button 
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-md border border-[#E5E7EB] shadow-sm text-[#111827]"
+        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-800 shadow-sm text-slate-900 dark:text-slate-100"
         onClick={() => setIsOpen(true)}
       >
         <Menu className="w-5 h-5" />
@@ -64,20 +65,27 @@ export function Sidebar() {
 
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 w-[240px] bg-[#FFFFFF] border-r border-[#E5E7EB] flex flex-col
+        fixed inset-y-0 left-0 z-50 w-[240px] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col
         transform transition-transform duration-200 ease-in-out
         md:translate-x-0 md:static md:flex-shrink-0 md:h-screen
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="p-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-[#111827] tracking-tight">CDSI</h1>
-          <button className="md:hidden text-[#6B7280]" onClick={() => setIsOpen(false)}>
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded-md" />
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">CDSI</h1>
+          </div>
+          <button className="md:hidden text-slate-500 dark:text-slate-400" onClick={() => setIsOpen(false)}>
             <X className="w-5 h-5" />
           </button>
         </div>
         <nav className="flex-1 px-4 space-y-1">
           <NavLinks />
         </nav>
+        
+        <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+          <ThemeToggle />
+        </div>
       </div>
     </>
   );

@@ -8,6 +8,7 @@ import Intake from './pages/Intake';
 import Processing from './pages/Processing';
 import Report from './pages/Report';
 import Settings from './pages/Settings';
+import { ThemeProvider } from './components/ThemeProvider';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,7 +30,7 @@ function NotFound() {
 
 function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-[#FAFAFA] font-sans">
+    <div className="flex min-h-screen bg-[#FAFAFA] dark:bg-slate-950 transition-colors font-sans text-slate-900 dark:text-slate-100">
       <Sidebar />
       <main className="flex-1 w-full flex justify-center">
         <div className="w-full max-w-[1100px] px-4 md:px-8 py-6 h-screen overflow-y-auto">
@@ -58,13 +59,15 @@ function AppRouter() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <CDSIProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <AuthGate>
-            <AppRouter />
-          </AuthGate>
-        </WouterRouter>
-      </CDSIProvider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <CDSIProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+            <AuthGate>
+              <AppRouter />
+            </AuthGate>
+          </WouterRouter>
+        </CDSIProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

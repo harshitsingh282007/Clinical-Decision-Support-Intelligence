@@ -1,6 +1,7 @@
 // Refined minimalist authentication gate
 import { useState, useEffect } from "react";
 import { Lock, ArrowRight, Linkedin } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState("");
@@ -46,32 +47,36 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] flex flex-col justify-center items-center p-4 relative font-sans">
-      {/* LinkedIn Link in Top Right Corner */}
-      <a
-        href="https://www.linkedin.com/in/harshit7820/"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="absolute top-6 right-6 flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm"
-      >
-        <Linkedin className="w-3.5 h-3.5 text-[#0A66C2]" />
-        <span>Connect on LinkedIn</span>
-      </a>
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-slate-950 transition-colors flex flex-col justify-center items-center p-4 relative font-sans text-slate-900 dark:text-slate-100">
+      {/* Top Right Controls */}
+      <div className="absolute top-6 right-6 flex items-center gap-3">
+        <ThemeToggle />
+        <a
+          href="https://www.linkedin.com/in/harshit7820/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors bg-white dark:bg-slate-900 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm"
+        >
+          <Linkedin className="w-3.5 h-3.5 text-[#0A66C2] dark:text-[#2d83db]" />
+          <span>Connect on LinkedIn</span>
+        </a>
+      </div>
 
       <div className="w-full max-w-[360px]">
-        {/* Minimalist Header */}
+        {/* Minimalist Header with Logo */}
         <div className="flex flex-col items-center mb-8 text-center">
-          <h1 className="text-xl font-semibold tracking-tight text-slate-900">CDSI Platform</h1>
-          <p className="text-2xl sm:text-3xl font-handwritten text-primary mt-2 -rotate-2">
+          <img src="/logo.png" alt="CDSI Logo" className="w-14 h-14 mb-4 rounded-xl shadow-sm" />
+          <h1 className="text-xl font-semibold tracking-tight">CDSI Platform</h1>
+          <p className="text-2xl sm:text-3xl font-handwritten text-primary mt-3 -rotate-2 whitespace-nowrap">
             The universal passport for your health.
           </p>
         </div>
 
         {/* Minimalist Card */}
-        <div className="bg-white border border-slate-200/80 rounded-xl p-8 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-8 shadow-sm">
           <form onSubmit={handleVerify} className="space-y-5">
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
                 <Lock className="w-4 h-4" />
               </div>
               <input
@@ -80,7 +85,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                 onChange={(e) => setToken(e.target.value)}
                 placeholder="Access Token"
                 required
-                className="w-full bg-slate-50/50 border border-slate-200 focus:border-slate-800 rounded-lg pl-9 pr-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none transition-all text-center tracking-wider"
+                className="w-full bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-primary rounded-lg pl-9 pr-4 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none transition-all text-center tracking-wider"
               />
             </div>
 
