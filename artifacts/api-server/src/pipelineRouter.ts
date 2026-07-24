@@ -12,7 +12,7 @@ function getEnvSecure(key: string): string | undefined {
   return val.trim().replace(/[\u200B-\u200D\uFEFF\u2028\u2029]/g, "").replace(/^["']|["']$/g, "");
 }
 
-const GROQ_STAGES = new Set([
+const GEMINI_STAGES = new Set([
   "ocr_cleanup",
   "entity_extract",
   "prescription_parse",
@@ -52,8 +52,8 @@ type ChatMessage = { role: string; content: string };
 const TIMEOUT_MS = 45_000;
 const STREAM_READ_IDLE_MS = 30_000;
 
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL = "llama-3.3-70b-versatile";
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -75,7 +75,7 @@ function languageInstruction(language: string, variant: "full" | "short" = "full
     : `\n\nRespond in ${language}. The user's input may also be in ${language}.`;
 }
 
-function groqHeaders(apiKey: string): Record<string, string> {
+function geminiHeaders(apiKey: string): Record<string, string> {
   return {
     "Content-Type": "application/json",
     "Authorization": `Bearer ${apiKey}`,
@@ -83,7 +83,7 @@ function groqHeaders(apiKey: string): Record<string, string> {
 }
 
 function dxgptHeaders(apiKey: string): Record<string, string> {
-  return { ...groqHeaders(apiKey), "x-api-key": apiKey };
+  return { ...geminiHeaders(apiKey), "x-api-key": apiKey };
 }
 
 /** Prepend the (language-augmented) system prompt to the message list. */
@@ -119,29 +119,29 @@ async function* parseSSETokens(body: ReadableStream<Uint8Array>): AsyncGenerator
   }
 }
 
-const GROQ_FALLBACK_MODELS = ["llama-3.1-8b-instant", "llama3-8b-8192"];
+const GEMINI_FALLBACK_MODELS = ["gemini-1.5-pro", "gemini-1.5-flash"];
 
-async function callGroqChat(
+async function callGeminiChat(
   prompt: string,
   systemPrompt: string,
   language: string,
   jsonMode: boolean
 ): Promise<AIResponse> {
-  const apiKey = getEnvSecure("GROQ_API_KEY");
+  const apiKey = getEnvSecure("GEMINI_API_KEY");
   if (!apiKey) {
-    return { content: "", error: "GROQ_API_KEY not configured", partial: true };
+    return { content: "", error: "GEMINI_API_KEY not configured", partial: true };
   }
 
-  const modelsToTry = [GROQ_MODEL, ...GROQ_FALLBACK_MODELS];
+  const modelsToTry = [GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS];
   let lastError = "";
   let lastStatus = 500;
 
   for (const model of modelsToTry) {
     try {
       const res = await withTimeout(
-        fetch(GROQ_URL, {
+        fetch(GEMINI_URL, {
           method: "POST",
-          headers: groqHeaders(apiKey),
+          headers: geminiHeaders(apiKey),
           body: JSON.stringify({
             model: model,
             messages: withSystemPrompt(systemPrompt, languageInstruction(language), [
@@ -162,7 +162,7 @@ async function callGroqChat(
       const err = await res.text();
       lastError = err;
       lastStatus = res.status;
-      logger.warn({ model, status: res.status, err }, "Groq model failed, trying next");
+      logger.warn({ model, status: res.status, err }, "Gemini model failed, trying next");
       
       // If unauthorized (401), no point in trying other models
       if (res.status === 401) {
@@ -170,14 +170,14 @@ async function callGroqChat(
       }
     } catch (e: unknown) {
       const msg = errorMessage(e);
-      logger.warn({ model, msg }, "Groq model threw exception, trying next");
+      logger.warn({ model, msg }, "Gemini model threw exception, trying next");
       lastError = msg;
     }
   }
 
-  const finalErr = `Groq API error: ${lastStatus} ${lastError}`;
+  const finalErr = `Gemini API error: ${lastStatus} ${lastError}`;
   if (jsonMode) {
-    logger.error({ finalErr }, "All Groq models failed");
+    logger.error({ finalErr }, "All Gemini models failed");
     return { content: "", error: finalErr, partial: true };
   }
   return { content: "", error: finalErr, partial: true };
@@ -187,11 +187,11 @@ async function callDxGPT(prompt: string, systemPrompt: string, language = "Engli
   const apiKey = getEnvSecure("DXGPT_API_KEY");
   const endpoint = getEnvSecure("DXGPT_ENDPOINT");
 
-  // Fall back to Groq if DxGPT not configured
+  // Fall back to Gemini if DxGPT not configured
   if (!apiKey || !endpoint) {
     logger.warn("DxGPT not configured (missing key or endpoint)");
     if (isFallback) return { content: "", error: "DxGPT fallback failed: DXGPT_ENDPOINT or DXGPT_API_KEY missing", partial: true };
-    return callGroqChat(prompt, systemPrompt, language, false);
+    return callGeminiChat(prompt, systemPrompt, language, false);
   }
 
   try {
@@ -213,13 +213,13 @@ async function callDxGPT(prompt: string, systemPrompt: string, language = "Engli
       const err = await res.text();
       logger.warn({ err }, "DxGPT API error");
       if (isFallback) return { content: "", error: `DxGPT fallback failed: ${res.status} ${err}`, partial: true };
-      return callGroqChat(prompt, systemPrompt, language, false);
+      return callGeminiChat(prompt, systemPrompt, language, false);
     }
     return { content: extractChatContent(await res.json()) };
   } catch (e: unknown) {
     logger.warn({ msg: errorMessage(e) }, "DxGPT call failed");
     if (isFallback) return { content: "", error: `DxGPT fallback failed: ${errorMessage(e)}`, partial: true };
-    return callGroqChat(prompt, systemPrompt, language, false);
+    return callGeminiChat(prompt, systemPrompt, language, false);
   }
 }
 
@@ -235,8 +235,8 @@ export async function* streamDxGPT(
   const endpoint = getEnvSecure("DXGPT_ENDPOINT");
 
   if (!apiKey || !endpoint) {
-    // Fall back to Groq streaming
-    yield* streamGroq(messages, systemPrompt, language);
+    // Fall back to Gemini streaming
+    yield* streamGemini(messages, systemPrompt, language);
     return;
   }
 
@@ -253,32 +253,32 @@ export async function* streamDxGPT(
       TIMEOUT_MS
     );
     if (!res.ok || !res.body) {
-      yield* streamGroq(messages, systemPrompt, language);
+      yield* streamGemini(messages, systemPrompt, language);
       return;
     }
     yield* parseSSETokens(res.body);
   } catch {
-    yield* streamGroq(messages, systemPrompt, language);
+    yield* streamGemini(messages, systemPrompt, language);
   }
 }
 
-export async function* streamGroq(
+export async function* streamGemini(
   messages: ChatMessage[],
   systemPrompt: string,
   language = "English"
 ): AsyncGenerator<string> {
-  const apiKey = getEnvSecure("GROQ_API_KEY");
+  const apiKey = getEnvSecure("GEMINI_API_KEY");
   if (!apiKey) {
-    yield "Error: GROQ_API_KEY not configured. The server administrator needs to set this environment variable.";
+    yield "Error: GEMINI_API_KEY not configured. The server administrator needs to set this environment variable.";
     return;
   }
   try {
     const res = await withTimeout(
-      fetch(GROQ_URL, {
+      fetch(GEMINI_URL, {
         method: "POST",
-        headers: groqHeaders(apiKey),
+        headers: geminiHeaders(apiKey),
         body: JSON.stringify({
-          model: GROQ_MODEL,
+          model: GEMINI_MODEL,
           messages: withSystemPrompt(systemPrompt, languageInstruction(language), messages),
           stream: true,
           temperature: 0.3,
@@ -306,14 +306,14 @@ export async function callAI(
   const language = options?.language ?? "English";
   const jsonMode = options?.jsonMode ?? false;
 
-  if (GROQ_STAGES.has(stage)) {
-    const groqRes = await callGroqChat(prompt, systemPrompt, language, jsonMode);
-    if (groqRes.error && groqRes.error.includes("403")) {
-      logger.warn({ stage, error: groqRes.error }, "Groq blocked (likely Cloudflare WAF on Azure). Falling back to DxGPT.");
-      // Fallback to DxGPT for Groq stages if Groq fails
+  if (GEMINI_STAGES.has(stage)) {
+    const geminiRes = await callGeminiChat(prompt, systemPrompt, language, jsonMode);
+    if (geminiRes.error && geminiRes.error.includes("403")) {
+      logger.warn({ stage, error: geminiRes.error }, "Gemini blocked. Falling back to DxGPT.");
+      // Fallback to DxGPT for Gemini stages if Gemini fails
       return callDxGPT(prompt, systemPrompt, language, true);
     }
-    return groqRes;
+    return geminiRes;
   }
   if (DXGPT_STAGES.has(stage)) {
     return callDxGPT(prompt, systemPrompt, language, false);

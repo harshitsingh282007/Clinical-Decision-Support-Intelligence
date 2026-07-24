@@ -62,14 +62,14 @@ router.get("/debug-env", (req: Request, res: Response) => {
     return clean.substring(0, 4) + "..." + clean.substring(clean.length - 4);
   };
 
-  const groq = process.env.GROQ_API_KEY;
+  const gemini = process.env.GEMINI_API_KEY;
   const dxgpt = process.env.DXGPT_API_KEY;
 
   res.json({
-    GROQ_API_KEY: {
-      exists: !!groq,
-      length: groq ? groq.length : 0,
-      masked: maskKey(groq)
+    GEMINI_API_KEY: {
+      exists: !!gemini,
+      length: gemini ? gemini.length : 0,
+      masked: maskKey(gemini)
     },
     DXGPT_API_KEY: {
       exists: !!dxgpt,
@@ -82,22 +82,22 @@ router.get("/debug-env", (req: Request, res: Response) => {
   });
 });
 
-router.get("/test-groq", async (req: Request, res: Response) => {
+router.get("/test-gemini", async (req: Request, res: Response) => {
   try {
-    let key = process.env.GROQ_API_KEY;
-    if (key) {
-      key = key.trim().replace(/[\u200B-\u200D\uFEFF\u2028\u2029]/g, "").replace(/^["']|["']$/g, "");
-    }
-    
-    if (!key) {
-      return res.status(400).json({ error: "No GROQ_API_KEY" });
+    let key = process.env.GEMINI_API_KEY;
+    if (req.query.key && typeof req.query.key === "string") {
+      key = req.query.key;
     }
 
-    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    if (!key) {
+      return res.status(400).json({ error: "No GEMINI_API_KEY" });
+    }
+
+    const geminiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${key}`,
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${key}`,
         "User-Agent": "CDSI-App/1.0"
       },
       body: JSON.stringify({
@@ -106,17 +106,9 @@ router.get("/test-groq", async (req: Request, res: Response) => {
       })
     });
 
-    const status = groqRes.status;
-    const text = await groqRes.text();
+    const status = geminiRes.status;
+    const text = await geminiRes.text();
 
-    res.json({
+    return res.json({
       status,
-      headers: Object.fromEntries(groqRes.headers.entries()),
-      body: text
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 export default router;

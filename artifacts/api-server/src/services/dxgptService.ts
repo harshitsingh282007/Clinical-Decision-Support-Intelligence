@@ -1,7 +1,7 @@
 // DxGPT service: clinical reasoning, differential diagnosis, confidence scoring
 import { callAI } from "../pipelineRouter.js";
 import { logger } from "../lib/logger.js";
-import type { LabParameter, PrescriptionItem } from "./groqService.js";
+import type { LabParameter, PrescriptionItem } from "./geminiService.js";
 
 export interface FindingDetails {
   whatItMeasures: string | null;

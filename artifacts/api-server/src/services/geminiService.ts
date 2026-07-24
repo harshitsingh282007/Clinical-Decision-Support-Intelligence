@@ -1,4 +1,4 @@
-// Groq service: structured data extraction from medical context
+// Gemini service: structured data extraction from medical context
 import { callAI } from "../pipelineRouter.js";
 import { logger } from "../lib/logger.js";
 
@@ -84,7 +84,7 @@ export async function extractStructuredData(
     return { labParameters: [], prescriptions: [], patientName: null, patientAge: null, patientSex: null, extractionErrors: ["No medical context provided"] };
   }
 
-  // Split into chunks if too long (Groq has token limits)
+  // Split into chunks if too long (Gemini has massive token limits, but good for safety)
   const MAX_CHARS = 12000;
   const chunks: string[] = [];
   if (medicalContext.length > MAX_CHARS) {
