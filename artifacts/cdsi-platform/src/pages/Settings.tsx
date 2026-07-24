@@ -1,7 +1,8 @@
-import { CheckCircle2, XCircle, Globe, Database, ShieldAlert } from 'lucide-react';
+import { CheckCircle2, XCircle, Globe, Database, ShieldAlert, Monitor } from 'lucide-react';
 import { useCDSI } from '../context/CDSIContext';
 import { LANGUAGES, t } from '../translations';
 import { useHealthCheck, getHealthCheckQueryKey } from '@workspace/api-client-react';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 export default function Settings() {
   const { language, setLanguage } = useCDSI();
@@ -22,13 +23,28 @@ export default function Settings() {
         <p className="text-slate-500 dark:text-slate-400">{t('settingsSubtitle', language)}</p>
       </div>
 
+      {/* Appearance Section */}
+      <section className="flex flex-col gap-4">
+        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+          <Monitor className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Appearance</h2>
+        </div>
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="font-medium text-slate-900 dark:text-slate-100">Dark Mode</span>
+            <span className="text-sm text-slate-500 dark:text-slate-400">Toggle between light and dark themes.</span>
+          </div>
+          <ThemeToggle showText={true} />
+        </div>
+      </section>
+
       {/* Language Section */}
       <section className="flex flex-col gap-4">
         <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
           <Globe className="w-5 h-5 text-slate-500 dark:text-slate-400" />
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('languageSection', language)}</h2>
         </div>
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
           <label className="block text-sm font-medium text-slate-900 dark:text-slate-100 mb-4">{t('appLanguage', language)}</label>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {LANGUAGES.map(lang => (
@@ -38,7 +54,7 @@ export default function Settings() {
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
                   language === lang.code
                     ? 'border-primary bg-primary/10 text-primary shadow-sm dark:bg-primary/20'
-                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600'
                 }`}
               >
                 <span className="text-base">{lang.flag}</span>
@@ -61,7 +77,7 @@ export default function Settings() {
           <Database className="w-5 h-5 text-slate-500 dark:text-slate-400" />
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('systemStatus', language)}</h2>
         </div>
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
               <span className="font-medium text-slate-900 dark:text-slate-100">{t('apiConnection', language)}</span>
@@ -112,7 +128,7 @@ export default function Settings() {
           <ShieldAlert className="w-5 h-5 text-slate-500 dark:text-slate-400" />
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('compliance', language)}</h2>
         </div>
-        <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-6 text-sm text-slate-500 dark:text-slate-400 flex flex-col gap-4 leading-relaxed">
+        <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-xl p-6 text-sm text-slate-500 dark:text-slate-400 flex flex-col gap-4 leading-relaxed">
           <p>
             <strong className="text-slate-900 dark:text-slate-100">Clinical Decision Support Intelligence (CDSI)</strong> is an AI-powered analytical tool designed to assist healthcare professionals.
           </p>

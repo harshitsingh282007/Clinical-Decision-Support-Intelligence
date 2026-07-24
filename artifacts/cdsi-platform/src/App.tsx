@@ -30,7 +30,7 @@ function NotFound() {
 
 function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-[#FAFAFA] dark:bg-slate-950 transition-colors font-sans text-slate-900 dark:text-slate-100">
+    <div className="flex min-h-screen bg-[#FAFAFA] dark:bg-slate-900 transition-colors font-sans text-slate-900 dark:text-slate-100">
       <Sidebar />
       <main className="flex-1 w-full flex justify-center">
         <div className="w-full max-w-[1100px] px-4 md:px-8 py-6 h-screen overflow-y-auto">

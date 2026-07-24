@@ -47,7 +47,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] dark:bg-slate-950 transition-colors flex flex-col justify-center items-center p-4 relative font-sans text-slate-900 dark:text-slate-100">
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-slate-900 transition-colors flex flex-col justify-center items-center p-4 relative font-sans text-slate-900 dark:text-slate-100">
       {/* Top Right Controls */}
       <div className="absolute top-6 right-6 flex items-center gap-3">
         <ThemeToggle />
@@ -55,7 +55,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           href="https://www.linkedin.com/in/harshit7820/"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors bg-white dark:bg-slate-900 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm"
+          className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors bg-white dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm"
         >
           <Linkedin className="w-3.5 h-3.5 text-[#0A66C2] dark:text-[#2d83db]" />
           <span>Connect on LinkedIn</span>
@@ -73,7 +73,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Minimalist Card */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl p-8 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl p-8 shadow-sm">
           <form onSubmit={handleVerify} className="space-y-5">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
@@ -85,7 +85,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                 onChange={(e) => setToken(e.target.value)}
                 placeholder="Access Token"
                 required
-                className="w-full bg-slate-50/50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-primary rounded-lg pl-9 pr-4 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none transition-all text-center tracking-wider"
+                className="w-full bg-slate-50/50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:border-primary dark:focus:border-primary rounded-lg pl-9 pr-4 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none transition-all text-center tracking-wider"
               />
             </div>
 

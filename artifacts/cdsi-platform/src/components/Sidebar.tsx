@@ -3,7 +3,6 @@ import { UploadCloud, Activity, FileText, MessageSquare, Settings, Menu, X } fro
 import { useState } from 'react';
 import { t } from '../translations';
 import { useCDSI } from '../context/CDSIContext';
-import { ThemeToggle } from './ThemeToggle';
 
 export function Sidebar() {
   const [location] = useLocation();
@@ -82,10 +81,6 @@ export function Sidebar() {
         <nav className="flex-1 px-4 space-y-1">
           <NavLinks />
         </nav>
-        
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">
-          <ThemeToggle />
-        </div>
       </div>
     </>
   );
