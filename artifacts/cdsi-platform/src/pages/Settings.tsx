@@ -135,7 +135,7 @@ export default function Settings() {
           <p>
             <strong>Disclaimer:</strong> {t('disclaimer', language)}
           </p>
-          <p>Version: 1.0.0-beta · Engine: GROQ / Llama-3-70b-versatile</p>
+          <p>Version: 1.0.0-beta · Engine: CDSI Clinical Intelligence Engine</p>
         </div>
       </section>
     </div>

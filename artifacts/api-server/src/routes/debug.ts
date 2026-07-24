@@ -62,59 +62,58 @@ router.get("/debug-env", (req: Request, res: Response) => {
     return clean.substring(0, 4) + "..." + clean.substring(clean.length - 4);
   };
 
-  const gemini = process.env.GEMINI_API_KEY;
-  const dxgpt = process.env.DXGPT_API_KEY;
+  const aiKey = process.env.AI_API_KEY;
 
   res.json({
-    GEMINI_API_KEY: {
-      exists: !!gemini,
-      length: gemini ? gemini.length : 0,
-      masked: maskKey(gemini)
+    AI_API_KEY: {
+      exists: !!aiKey,
+      length: aiKey ? aiKey.length : 0,
+      masked: maskKey(aiKey)
     },
-    DXGPT_API_KEY: {
-      exists: !!dxgpt,
-      length: dxgpt ? dxgpt.length : 0,
-      masked: maskKey(dxgpt)
-    },
+    AI_BASE_URL: process.env.AI_BASE_URL ?? null,
+    AI_MODEL: process.env.AI_MODEL ?? null,
     NODE_ENV: process.env.NODE_ENV,
     PORT: process.env.PORT,
     WEBSITE_SITE_NAME: process.env.WEBSITE_SITE_NAME
   });
 });
 
-router.get("/test-gemini", async (req: Request, res: Response) => {
+router.get("/test-ai", async (req: Request, res: Response) => {
   try {
-    let key = process.env.GEMINI_API_KEY;
-    if (req.query.key && typeof req.query.key === "string") {
-      key = req.query.key;
+    const key = process.env.AI_API_KEY;
+    const baseUrl = (process.env.AI_BASE_URL ?? "").replace(/\/+$/, "");
+    const model = process.env.AI_MODEL ?? "gpt-4o";
+
+    if (!key || !baseUrl) {
+      return res.status(400).json({ error: "AI_API_KEY and AI_BASE_URL must be configured" });
     }
 
-    if (!key) {
-      return res.status(400).json({ error: "No GEMINI_API_KEY" });
-    }
+    const url = baseUrl.endsWith("/chat/completions") ? baseUrl : `${baseUrl}/chat/completions`;
 
-    const geminiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+    const aiRes = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${key}`,
-        "User-Agent": "CDSI-App/1.0"
       },
       body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
-        messages: [{ role: "user", content: "test" }]
+        model,
+        messages: [{ role: "user", content: "Reply with just the word 'ok'" }],
+        max_tokens: 10,
       })
     });
 
-    const status = geminiRes.status;
-    const text = await geminiRes.text();
+    const status = aiRes.status;
+    const text = await aiRes.text();
 
     return res.json({
       status,
       text
     });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+  } catch (e) {
+    return res.status(500).json({
+      error: String(e)
+    });
   }
 });
 

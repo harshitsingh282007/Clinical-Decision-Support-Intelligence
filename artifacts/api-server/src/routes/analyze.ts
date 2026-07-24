@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { getJob, updateJob, reportContextStore, type JobState } from "../store.js";
-import { extractStructuredData } from "../services/geminiService.js";
-import { performClinicalReasoning } from "../services/dxgptService.js";
+import { extractStructuredData } from "../services/extractionService.js";
+import { performClinicalReasoning } from "../services/clinicalReasoningService.js";
 import { logger } from "../lib/logger.js";
 import { errorMessage } from "../lib/errors.js";
 import type { Request, Response } from "express";
@@ -41,7 +41,7 @@ router.post("/analyze", async (req: Request, res: Response) => {
           status: "processing",
           stage: "extraction",
           progress: 55,
-          message: "Extracting lab values and prescriptions with Gemini AI...",
+          message: "Extracting lab values and prescriptions using AI...",
           intakeData,
         });
 

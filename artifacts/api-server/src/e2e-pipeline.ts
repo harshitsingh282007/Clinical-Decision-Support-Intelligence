@@ -1,11 +1,11 @@
 /**
  * End-to-end pipeline test - seeds a job, runs analysis stages, verifies completion.
- * Usage: PORT=8080 GEMINI_API_KEY=... pnpm run test:pipeline
+ * Usage: PORT=8080 AI_API_KEY=... AI_BASE_URL=... AI_MODEL=... pnpm run test:pipeline
  */
 import { v4 as uuidv4 } from "uuid";
 import { createJob, updateJob, getJob } from "./store.js";
-import { extractStructuredData } from "./services/geminiService.js";
-import { performClinicalReasoning } from "./services/dxgptService.js";
+import { extractStructuredData } from "./services/extractionService.js";
+import { performClinicalReasoning } from "./services/clinicalReasoningService.js";
 import { errorMessage } from "./lib/errors.js";
 import type { ClinicalReport } from "./types/report.js";
 
@@ -160,8 +160,8 @@ async function runPipelineOnce(runIndex: number): Promise<{ ok: boolean; stageTi
 }
 
 async function main() {
-  if (!process.env["GEMINI_API_KEY"]) {
-    console.error("GEMINI_API_KEY is required for pipeline e2e test");
+  if (!process.env["AI_API_KEY"]) {
+    console.error("AI_API_KEY is required for pipeline e2e test");
     process.exit(1);
   }
 

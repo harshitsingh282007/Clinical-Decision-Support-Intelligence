@@ -1,6 +1,9 @@
-// Pipeline Router - routes AI calls to Groq or DxGPT based on stage
-// Groq stages: ocr_cleanup, entity_extract, prescription_parse, lab_structure, intake_generate
-// DxGPT stages: correlate, diagnose, confidence_score, report_generate, chat_reason
+// Pipeline Router — provider-agnostic AI call layer
+// Uses any OpenAI-compatible chat completions API.
+// Configure via environment variables:
+//   AI_API_KEY   — API key for the provider
+//   AI_BASE_URL  — Base URL (e.g. https://api.deepseek.com/v1, https://api.openai.com/v1)
+//   AI_MODEL     — Model identifier (e.g. deepseek-v4-flash, gpt-4o, gemini-3.6-flash)
 
 import { logger } from "./lib/logger.js";
 import { errorMessage } from "./lib/errors.js";
@@ -8,25 +11,27 @@ import { errorMessage } from "./lib/errors.js";
 function getEnvSecure(key: string): string | undefined {
   const val = process.env[key];
   if (!val) return undefined;
-  // Trim spaces, newlines, and remove leading/trailing quotes or line separators
   return val.trim().replace(/[\u200B-\u200D\uFEFF\u2028\u2029]/g, "").replace(/^["']|["']$/g, "");
 }
 
-const GEMINI_STAGES = new Set([
-  "ocr_cleanup",
-  "entity_extract",
-  "prescription_parse",
-  "lab_structure",
-  "intake_generate",
-]);
+// ── Configuration from environment ──────────────────────────────────────────
 
-const DXGPT_STAGES = new Set([
-  "correlate",
-  "diagnose",
-  "confidence_score",
-  "report_generate",
-  "chat_reason",
-]);
+function getAIConfig() {
+  const apiKey = getEnvSecure("AI_API_KEY");
+  const baseUrl = (getEnvSecure("AI_BASE_URL") ?? "").replace(/\/+$/, "");
+  const model = getEnvSecure("AI_MODEL") ?? "gpt-4o";
+
+  return { apiKey, baseUrl, model };
+}
+
+function getCompletionsUrl(baseUrl: string): string {
+  // If the base URL already ends with /chat/completions, use it as-is
+  if (baseUrl.endsWith("/chat/completions")) return baseUrl;
+  // If it ends with /v1 or /v1beta or similar, append /chat/completions
+  return `${baseUrl}/chat/completions`;
+}
+
+// ── Types ───────────────────────────────────────────────────────────────────
 
 export type PipelineStage =
   | "ocr_cleanup"
@@ -52,8 +57,7 @@ type ChatMessage = { role: string; content: string };
 const TIMEOUT_MS = 45_000;
 const STREAM_READ_IDLE_MS = 30_000;
 
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-const GEMINI_MODEL = "gemini-3.6-flash";
+// ── Helpers ─────────────────────────────────────────────────────────────────
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -64,10 +68,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   });
 }
 
-// ── Shared request-building helpers ─────────────────────────────────────────
-
-/** Language directive appended to the system prompt. The chat pipeline uses a
- *  shorter variant than the structured (non-streaming) calls. */
+/** Language directive appended to the system prompt. */
 function languageInstruction(language: string, variant: "full" | "short" = "full"): string {
   if (language === "English") return "";
   return variant === "short"
@@ -75,15 +76,11 @@ function languageInstruction(language: string, variant: "full" | "short" = "full
     : `\n\nRespond in ${language}. The user's input may also be in ${language}.`;
 }
 
-function geminiHeaders(apiKey: string): Record<string, string> {
+function authHeaders(apiKey: string): Record<string, string> {
   return {
     "Content-Type": "application/json",
     "Authorization": `Bearer ${apiKey}`,
   };
-}
-
-function dxgptHeaders(apiKey: string): Record<string, string> {
-  return { ...geminiHeaders(apiKey), "x-api-key": apiKey };
 }
 
 /** Prepend the (language-augmented) system prompt to the message list. */
@@ -91,7 +88,7 @@ function withSystemPrompt(systemPrompt: string, langInstruction: string, rest: C
   return [{ role: "system", content: systemPrompt + langInstruction }, ...rest];
 }
 
-/** Pull the assistant text out of an OpenAI-style (or DxGPT) chat response. */
+/** Pull the assistant text out of an OpenAI-style chat response. */
 function extractChatContent(data: unknown): string {
   const d = data as { choices?: Array<{ message?: { content?: string } }>; content?: string };
   return d.choices?.[0]?.message?.content ?? (d.content as string) ?? "";
@@ -119,167 +116,82 @@ async function* parseSSETokens(body: ReadableStream<Uint8Array>): AsyncGenerator
   }
 }
 
-const GEMINI_FALLBACK_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite"];
+// ── Core AI call (non-streaming) ────────────────────────────────────────────
 
-async function callGeminiChat(
+async function callProvider(
   prompt: string,
   systemPrompt: string,
   language: string,
   jsonMode: boolean
 ): Promise<AIResponse> {
-  const apiKey = getEnvSecure("GEMINI_API_KEY");
+  const { apiKey, baseUrl, model } = getAIConfig();
+
   if (!apiKey) {
-    return { content: "", error: "GEMINI_API_KEY not configured", partial: true };
+    return { content: "", error: "AI_API_KEY not configured. Set AI_API_KEY, AI_BASE_URL, and AI_MODEL environment variables.", partial: true };
+  }
+  if (!baseUrl) {
+    return { content: "", error: "AI_BASE_URL not configured. Set the base URL for your AI provider (e.g. https://api.deepseek.com/v1).", partial: true };
   }
 
-  const modelsToTry = [GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS];
-  let lastError = "";
-  let lastStatus = 500;
-
-  for (const model of modelsToTry) {
-    try {
-      const res = await withTimeout(
-        fetch(GEMINI_URL, {
-          method: "POST",
-          headers: geminiHeaders(apiKey),
-          body: JSON.stringify({
-            model: model,
-            messages: withSystemPrompt(systemPrompt, languageInstruction(language), [
-              { role: "user", content: prompt },
-            ]),
-            temperature: jsonMode ? 0.1 : 0.3,
-            max_tokens: 4096,
-            ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
-          }),
-        }),
-        TIMEOUT_MS
-      );
-      
-      if (res.ok) {
-        return { content: extractChatContent(await res.json()) };
-      }
-      
-      const err = await res.text();
-      lastError = err;
-      lastStatus = res.status;
-      logger.warn({ model, status: res.status, err }, "Gemini model failed, trying next");
-      
-      // If unauthorized (401), no point in trying other models
-      if (res.status === 401) {
-        break;
-      }
-    } catch (e: unknown) {
-      const msg = errorMessage(e);
-      logger.warn({ model, msg }, "Gemini model threw exception, trying next");
-      lastError = msg;
-    }
-  }
-
-  const finalErr = `Gemini API error: ${lastStatus} ${lastError}`;
-  if (jsonMode) {
-    logger.error({ finalErr }, "All Gemini models failed");
-    return { content: "", error: finalErr, partial: true };
-  }
-  return { content: "", error: finalErr, partial: true };
-}
-
-async function callDxGPT(prompt: string, systemPrompt: string, language = "English", isFallback = false): Promise<AIResponse> {
-  const apiKey = getEnvSecure("DXGPT_API_KEY");
-  const endpoint = getEnvSecure("DXGPT_ENDPOINT");
-
-  // Fall back to Gemini if DxGPT not configured
-  if (!apiKey || !endpoint) {
-    logger.warn("DxGPT not configured (missing key or endpoint)");
-    if (isFallback) return { content: "", error: "DxGPT fallback failed: DXGPT_ENDPOINT or DXGPT_API_KEY missing", partial: true };
-    return callGeminiChat(prompt, systemPrompt, language, false);
-  }
+  const url = getCompletionsUrl(baseUrl);
 
   try {
     const res = await withTimeout(
-      fetch(endpoint, {
+      fetch(url, {
         method: "POST",
-        headers: dxgptHeaders(apiKey),
+        headers: authHeaders(apiKey),
         body: JSON.stringify({
+          model,
           messages: withSystemPrompt(systemPrompt, languageInstruction(language), [
             { role: "user", content: prompt },
           ]),
-          temperature: 0.1,
-          stream: false,
+          temperature: jsonMode ? 0.1 : 0.3,
+          max_tokens: 4096,
+          ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
         }),
       }),
       TIMEOUT_MS
     );
-    if (!res.ok) {
-      const err = await res.text();
-      logger.warn({ err }, "DxGPT API error");
-      if (isFallback) return { content: "", error: `DxGPT fallback failed: ${res.status} ${err}`, partial: true };
-      return callGeminiChat(prompt, systemPrompt, language, false);
+
+    if (res.ok) {
+      return { content: extractChatContent(await res.json()) };
     }
-    return { content: extractChatContent(await res.json()) };
+
+    const err = await res.text();
+    const finalErr = `AI API error: ${res.status} ${err}`;
+    logger.error({ model, status: res.status, err }, "AI provider call failed");
+    return { content: "", error: finalErr, partial: true };
   } catch (e: unknown) {
-    logger.warn({ msg: errorMessage(e) }, "DxGPT call failed");
-    if (isFallback) return { content: "", error: `DxGPT fallback failed: ${errorMessage(e)}`, partial: true };
-    return callGeminiChat(prompt, systemPrompt, language, false);
+    const msg = errorMessage(e);
+    logger.error({ model, msg }, "AI provider call threw exception");
+    return { content: "", error: `AI call failed: ${msg}`, partial: true };
   }
 }
 
-// ── Streaming calls ──────────────────────────────────────────────────────────
+// ── Streaming AI call ───────────────────────────────────────────────────────
 
-// Streaming variant for DxGPT chat
-export async function* streamDxGPT(
+export async function* streamAI(
   messages: ChatMessage[],
   systemPrompt: string,
   language = "English"
 ): AsyncGenerator<string> {
-  const apiKey = getEnvSecure("DXGPT_API_KEY");
-  const endpoint = getEnvSecure("DXGPT_ENDPOINT");
+  const { apiKey, baseUrl, model } = getAIConfig();
 
-  if (!apiKey || !endpoint) {
-    // Fall back to Gemini streaming
-    yield* streamGemini(messages, systemPrompt, language);
+  if (!apiKey || !baseUrl) {
+    yield "Error: AI provider not configured. The server administrator needs to set AI_API_KEY, AI_BASE_URL, and AI_MODEL environment variables.";
     return;
   }
 
+  const url = getCompletionsUrl(baseUrl);
+
   try {
     const res = await withTimeout(
-      fetch(endpoint, {
+      fetch(url, {
         method: "POST",
-        headers: dxgptHeaders(apiKey),
+        headers: authHeaders(apiKey),
         body: JSON.stringify({
+          model,
           messages: withSystemPrompt(systemPrompt, languageInstruction(language, "short"), messages),
-          stream: true,
-        }),
-      }),
-      TIMEOUT_MS
-    );
-    if (!res.ok || !res.body) {
-      yield* streamGemini(messages, systemPrompt, language);
-      return;
-    }
-    yield* parseSSETokens(res.body);
-  } catch {
-    yield* streamGemini(messages, systemPrompt, language);
-  }
-}
-
-export async function* streamGemini(
-  messages: ChatMessage[],
-  systemPrompt: string,
-  language = "English"
-): AsyncGenerator<string> {
-  const apiKey = getEnvSecure("GEMINI_API_KEY");
-  if (!apiKey) {
-    yield "Error: GEMINI_API_KEY not configured. The server administrator needs to set this environment variable.";
-    return;
-  }
-  try {
-    const res = await withTimeout(
-      fetch(GEMINI_URL, {
-        method: "POST",
-        headers: geminiHeaders(apiKey),
-        body: JSON.stringify({
-          model: GEMINI_MODEL,
-          messages: withSystemPrompt(systemPrompt, languageInstruction(language), messages),
           stream: true,
           temperature: 0.3,
           max_tokens: 2048,
@@ -297,6 +209,8 @@ export async function* streamGemini(
   }
 }
 
+// ── Public API ──────────────────────────────────────────────────────────────
+
 export async function callAI(
   stage: PipelineStage,
   prompt: string,
@@ -306,7 +220,5 @@ export async function callAI(
   const language = options?.language ?? "English";
   const jsonMode = options?.jsonMode ?? false;
 
-  // We route all stages to Gemini since it provides free medical-grade reasoning
-  // and is not blocked by Azure's Cloudflare WAF like Groq is, and DxGPT endpoints might be down.
-  return callGeminiChat(prompt, systemPrompt, language, jsonMode);
+  return callProvider(prompt, systemPrompt, language, jsonMode);
 }
