@@ -54,3 +54,6 @@ Thumbs.db
 
 # Auto-generated at build/dev time
 **/.generated/
+deploy/
+test-deploy/
+dummy*
