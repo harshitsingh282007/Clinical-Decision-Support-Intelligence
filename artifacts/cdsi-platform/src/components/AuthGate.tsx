@@ -62,7 +62,9 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         {/* Minimalist Header */}
         <div className="flex flex-col items-center mb-8 text-center">
           <h1 className="text-xl font-semibold tracking-tight text-slate-900">CDSI Platform</h1>
-          <p className="text-xs text-slate-500 mt-1">Clinical Decision Support Intelligence</p>
+          <p className="text-2xl sm:text-3xl font-handwritten text-primary mt-2 -rotate-2">
+            The universal passport for your health.
+          </p>
         </div>
 
         {/* Minimalist Card */}
@@ -91,7 +93,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             <button
               type="submit"
               disabled={!token}
-              className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-100 disabled:text-slate-400 text-white font-medium text-sm rounded-lg py-2.5 px-4 transition-all flex items-center justify-center gap-2 shadow-sm"
+              className="w-full bg-primary hover:bg-primary/90 disabled:bg-slate-100 disabled:text-slate-400 text-white font-medium text-sm rounded-lg py-2.5 px-4 transition-all flex items-center justify-center gap-2 shadow-sm"
             >
               Enter Platform
               <ArrowRight className="w-3.5 h-3.5" />
