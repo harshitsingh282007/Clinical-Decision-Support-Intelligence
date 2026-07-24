@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { getJob, linkSessionToJob } from "../store.js";
 import { chatStore, reportContextStore } from "../store.js";
-import { streamDxGPT } from "../pipelineRouter.js";
+import { streamGemini } from "../pipelineRouter.js";
 import { logger } from "../lib/logger.js";
 import { sanitizeChatMessage } from "../lib/sanitize.js";
 import type { Request, Response } from "express";
@@ -122,7 +122,7 @@ router.post("/chat", async (req: Request, res: Response) => {
   let fullResponse = "";
 
   try {
-    for await (const token of streamDxGPT(
+    for await (const token of streamGemini(
       [...aiMessages, { role: "user", content: sanitizedMessage }],
       systemWithContext,
       language

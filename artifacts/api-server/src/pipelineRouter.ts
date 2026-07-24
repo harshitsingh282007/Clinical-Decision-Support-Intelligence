@@ -306,17 +306,7 @@ export async function callAI(
   const language = options?.language ?? "English";
   const jsonMode = options?.jsonMode ?? false;
 
-  if (GEMINI_STAGES.has(stage)) {
-    const geminiRes = await callGeminiChat(prompt, systemPrompt, language, jsonMode);
-    if (geminiRes.error && geminiRes.error.includes("403")) {
-      logger.warn({ stage, error: geminiRes.error }, "Gemini blocked. Falling back to DxGPT.");
-      // Fallback to DxGPT for Gemini stages if Gemini fails
-      return callDxGPT(prompt, systemPrompt, language, true);
-    }
-    return geminiRes;
-  }
-  if (DXGPT_STAGES.has(stage)) {
-    return callDxGPT(prompt, systemPrompt, language, false);
-  }
-  return { content: "", error: `Unknown stage: ${stage}`, partial: true };
+  // We route all stages to Gemini since it provides free medical-grade reasoning
+  // and is not blocked by Azure's Cloudflare WAF like Groq is, and DxGPT endpoints might be down.
+  return callGeminiChat(prompt, systemPrompt, language, jsonMode);
 }
