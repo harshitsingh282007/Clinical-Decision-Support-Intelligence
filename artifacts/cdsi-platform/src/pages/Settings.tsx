@@ -130,7 +130,7 @@ export default function Settings() {
         </div>
         <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-xl p-6 text-sm text-slate-500 dark:text-slate-400 flex flex-col gap-4 leading-relaxed">
           <p>
-            <strong className="text-slate-900 dark:text-slate-100">Clinical Decision Support Intelligence (CDSI)</strong> is an AI-powered analytical tool designed to assist healthcare professionals.
+            <strong className="text-slate-900 dark:text-slate-100">Clinical Decision Support Intelligence (CDSI)</strong> is an AI-powered analytical platform that transforms medical documents into structured, reviewable clinical reports — giving healthcare professionals a comprehensive decision-support companion.
           </p>
           <p>
             <strong>Disclaimer:</strong> {t('disclaimer', language)}

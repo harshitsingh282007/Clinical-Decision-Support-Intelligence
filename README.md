@@ -61,8 +61,8 @@ English · Arabic · French · Spanish · German · Portuguese · Hindi · Urdu 
 | Charts | Recharts 2.x |
 | State / Data | TanStack Query v5, React Context |
 | Backend | Node.js, Express, esbuild |
-| AI - Extraction | Groq (`llama-3.3-70b-versatile`) |
-| AI - Reasoning | DxGPT (falls back to Groq if unconfigured) |
+| AI - Extraction | OpenAI-compatible API (e.g. DeepSeek, OpenAI, Gemini) |
+| AI - Reasoning | OpenAI-compatible API (e.g. DeepSeek, OpenAI, Gemini) |
 | PDF Generation | PDFKit (server-side) |
 | PDF Parsing | pdf-parse v2 |
 | Monorepo | pnpm workspaces |
@@ -93,8 +93,8 @@ CDSI-AI/
 │           │   └── status.ts         # GET /api/status/:jobId - polling
 │           ├── services/
 │           │   ├── pdfExport.ts      # Full report PDF builder
-│           │   ├── groqExtract.ts    # Groq extraction pipeline
-│           │   └── dxgptReason.ts    # DxGPT reasoning pipeline
+│           │   ├── extractionService.ts    # AI extraction pipeline
+│           │   └── clinicalReasoningService.ts    # AI reasoning pipeline
 │           └── types/
 │               └── report.ts         # Shared ClinicalReport schema
 └── package.json
@@ -108,8 +108,8 @@ CDSI-AI/
 1. Upload  →  Patient uploads a PDF or text medical document
 2. Intake  →  Optional: fill in patient demographics & history
 3. Process →  AI pipeline extracts & structures all clinical data
-                 ├── Groq LLM: lab values, prescriptions, findings
-                 └── DxGPT:    risk assessment, conditions, conclusion
+                 ├── Extraction AI: lab values, prescriptions, findings
+                 └── Reasoning AI:  risk assessment, conditions, conclusion
 4. Report  →  Interactive dashboard with charts & full clinical report
 5. Export  →  Download a professional multi-page PDF
 ```
