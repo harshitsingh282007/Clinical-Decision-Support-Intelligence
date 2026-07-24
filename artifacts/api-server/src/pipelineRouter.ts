@@ -53,7 +53,7 @@ const TIMEOUT_MS = 45_000;
 const STREAM_READ_IDLE_MS = 30_000;
 
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-3.6-flash";
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -119,7 +119,7 @@ async function* parseSSETokens(body: ReadableStream<Uint8Array>): AsyncGenerator
   }
 }
 
-const GEMINI_FALLBACK_MODELS = ["gemini-1.5-pro", "gemini-1.5-flash"];
+const GEMINI_FALLBACK_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite"];
 
 async function callGeminiChat(
   prompt: string,
